@@ -1,0 +1,14 @@
+[project]
+name = "py-net-conf-cisco"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Troy Holder", email = "964446+troyholder@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
