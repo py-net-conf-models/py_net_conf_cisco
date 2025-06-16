@@ -35,7 +35,7 @@ class CiscoConfig:
         return self._hostname
 
     @hostname.setter
-    def hostname(self, value) -> None:
+    def hostname(self, value: str) -> None:
         self._hostname = value
         if self._hostname_line:
             self._hostname_line.text = f"hostname {value}"
