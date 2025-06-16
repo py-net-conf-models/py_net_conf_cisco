@@ -36,7 +36,7 @@ class InterfaceConfig:
     vrf: Optional[str] = None
     dhcp_assigned: Optional[bool] = None
     description: Optional[str] = None
-    shutdown: Optional[str] = None
+    shutdown: Optional[bool] = None
 
     def __post_init__(self):
         if any(

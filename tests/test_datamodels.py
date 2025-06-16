@@ -16,19 +16,19 @@ class TestInterfaceConfig:
     def test_empty_creation_throws_excptions(self):
         """Test a empty creation fails"""
         with raises(TypeError):
-            interface = InterfaceConfig()
+            interface = InterfaceConfig()  # pyright: ignore
             return interface
 
     def test_creation_with_no_interface_type_throws_exception(self):
         """Test a creation with no InterfaceType failes"""
         with raises(TypeError):
-            interface = InterfaceConfig(interface_number="1")
+            interface = InterfaceConfig(interface_number="1")  # pyright: ignore
             return interface
 
     def test_creation_with_no_number_type_throws_exception(self):
         """Test a creation with no InterfaceType failes"""
         with raises(TypeError):
-            interface = InterfaceConfig(InterfaceType.ETHERNET)
+            interface = InterfaceConfig(InterfaceType.ETHERNET)  # pyright: ignore
             return interface
 
     def test_basic_creation(self):
@@ -87,7 +87,8 @@ class TestInterfaceConfig:
 
     def test_to_config_lines_minimal(self):
         interface = InterfaceConfig(
-            interface_type=InterfaceType.ETHERNET, interface_number=1
+            interface_type=InterfaceType.ETHERNET,
+            interface_number=1,  # pyright: ignore
         )
         expected_lines = ["interface Ethernet1", "!"]
         assert expected_lines == interface.to_config_lines()
@@ -95,7 +96,7 @@ class TestInterfaceConfig:
     def test_to_config_lines_with_subinterface(self):
         interface = InterfaceConfig(
             interface_type=InterfaceType.ETHERNET,
-            interface_number=1,
+            interface_number="1",
             subinterface_number=2,
         )
         expected_lines = ["interface Ethernet1.2", "!"]
@@ -104,7 +105,7 @@ class TestInterfaceConfig:
     def test_to_config_lines_with_description(self):
         interface = InterfaceConfig(
             interface_type=InterfaceType.ETHERNET,
-            interface_number=1,
+            interface_number="1",
             description="Test description",
         )
         expected_lines = [
