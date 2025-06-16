@@ -1,10 +1,12 @@
 import os
 import tempfile
+from ipaddress import IPv4Interface
 
 import pytest
 import sample1
 
-from py_net_conf_cisco import CiscoConfig
+from py_net_conf_cisco import CiscoConfig, InterfaceConfig
+from py_net_conf_cisco.interface_datamodel import InterfaceType
 
 
 class TestCiscoConfig:
@@ -88,3 +90,23 @@ class TestCiscoConfig:
         hostname_line = self.find_hostname_line(empty_config._parsed_config)
         assert hostname_line.text == "hostname foo"
         assert len(empty_config._parsed_config.get_text()) == 2
+
+    @pytest.mark.parametrize(
+        "interface,expected",
+        [
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="10",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="10",
+                    description="Server VLAN",
+                    ip_address=IPv4Interface("10.0.10.1/24"),
+                ),
+            ),
+        ],
+    )
+    def test_getting_interface(self, config_from_file, interface, expected):
+        assert config_from_file.get_interface(interface) == expected
