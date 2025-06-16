@@ -7,7 +7,9 @@ authors = [
     { name = "Troy Holder", email = "964446+troyholder@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "ciscoconfparse2>=0.8.20",
+]
 
 [build-system]
 requires = ["hatchling"]

@@ -15,6 +15,7 @@ def test_module_version_exists():
 
 classes = [
     py_net_conf_cisco.InterfaceConfig,
+    py_net_conf_cisco.CiscoConfig,
 ]
 
 
