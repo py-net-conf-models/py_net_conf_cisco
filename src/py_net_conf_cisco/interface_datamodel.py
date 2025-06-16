@@ -11,7 +11,9 @@ from typing import Optional
 
 
 class InterfaceType(Enum):
-    """Allowabld interface types"""
+    """
+    Allowabld interface types
+    """
 
     ETHERNET = "Ethernet"
     GIGABITETHERNET = "GigabitEthernet"
@@ -27,7 +29,19 @@ class InterfaceType(Enum):
 
 @dataclass
 class InterfaceConfig:
-    """Represents an interface configuration."""
+    """
+    Represents an interface configuration.
+
+    Attributes:
+            interface_type: The type of interface (e.g., GigabitEthernet).
+            interface_number: The number of the interface as a string (e.g., 1/1/1).
+            subinterface_number: Optional subinterface number.
+            ip_address: Optional IPv4 interface address (ipaddress.IPv4Interface).
+            vrf: Optional VRF assignment as a string.
+            dhcp_assigned: If True, IP address is assigned by DHCP.
+            description: Optional interface description.
+            shutdown: If True, the interface is administratively shut down.
+    """
 
     interface_type: InterfaceType
     interface_number: str
@@ -39,6 +53,7 @@ class InterfaceConfig:
     shutdown: Optional[bool] = None
 
     def __post_init__(self):
+        # Verify that the ip address the interface has is either DHCP or staticall assigned.
         if any(
             [
                 self.dhcp_assigned is True and self.ip_address is not None,
@@ -48,6 +63,9 @@ class InterfaceConfig:
             raise Exception
 
     def to_config_lines(self):
+        """
+        Render the interface configuration as Cisco-style CLI lines.
+        """
         lines = [
             f"interface {self.interface_type.value}{self.interface_number}{'' if self.subinterface_number is None else '.' + str(self.subinterface_number)}"
         ]
