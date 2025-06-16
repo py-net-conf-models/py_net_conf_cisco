@@ -46,3 +46,8 @@ class TestCiscoConfig:
         """Test initialization with config file."""
         config = CiscoConfig(config_path=sample_config_file)
         assert config._parsed_config is not None
+
+    def test_getting_hostname_property(self, config_from_file):
+        """Test the hostname propeerty"""
+        hostname = config_from_file.hostname
+        assert hostname == "TestSwitch"

@@ -21,3 +21,13 @@ class CiscoConfig:
             self._parsed_config = CiscoConfParse(config_lines)
         else:
             self._parsed_config = CiscoConfParse(str(config_path))
+
+    @property
+    def hostname(self) -> str:
+        if self._hostname is None:
+            hostname_objs = self._parsed_config.find_objects(r"^hostname\s+")
+            if hostname_objs:
+                self._hostname = hostname_objs[0].text.split()[1]
+            else:
+                self._hostname = ""
+        return self._hostname
