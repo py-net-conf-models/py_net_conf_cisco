@@ -153,4 +153,5 @@ class TestInterfaceConfig:
     )
     def test_to_config_lines_various(self, kwargs, expected_lines):
         interface = InterfaceConfig(**kwargs)
+        assert interface.interface_line() == expected_lines[0]
         assert interface.to_config_lines() == expected_lines

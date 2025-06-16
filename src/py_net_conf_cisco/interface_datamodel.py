@@ -62,13 +62,15 @@ class InterfaceConfig:
         ):
             raise Exception
 
+    def interface_line(self):
+        """Return the the parent line for the interface configuration"""
+        return f"interface {self.interface_type.value}{self.interface_number}{'' if self.subinterface_number is None else '.' + str(self.subinterface_number)}"
+
     def to_config_lines(self):
         """
         Render the interface configuration as Cisco-style CLI lines.
         """
-        lines = [
-            f"interface {self.interface_type.value}{self.interface_number}{'' if self.subinterface_number is None else '.' + str(self.subinterface_number)}"
-        ]
+        lines = [self.interface_line()]
         if self.description is not None:
             lines.append(f" description {self.description}")
         if self.vrf is not None:
