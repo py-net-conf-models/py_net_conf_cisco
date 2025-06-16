@@ -42,12 +42,49 @@ class TestCiscoConfig:
         """Create CiscoConfig instance from file."""
         return CiscoConfig(config_path=sample_config_file)
 
+    @pytest.fixture
+    def empty_config(self):
+        """Create and empty config"""
+        return CiscoConfig(config_text="!")
+
     def test_init_with_file(self, sample_config_file):
         """Test initialization with config file."""
         config = CiscoConfig(config_path=sample_config_file)
         assert config._parsed_config is not None
 
+    def find_hostname_line(self, parsed_config):
+        return parsed_config.find_objects(r"^hostname\s+")[0]
+
     def test_getting_hostname_property(self, config_from_file):
         """Test the hostname propeerty"""
         hostname = config_from_file.hostname
         assert hostname == "TestSwitch"
+        hostname_line = self.find_hostname_line(config_from_file._parsed_config)
+        assert hostname_line.text == "hostname TestSwitch"
+
+    def test_seting_hostname_property_with_sample1(self, config_from_file):
+        """Test setting the hostname"""
+        config_from_file.hostname = "foo"
+        assert config_from_file.hostname == "foo"
+        hostname_line = self.find_hostname_line(config_from_file._parsed_config)
+        assert hostname_line.text == "hostname foo"
+
+    def test_seting_hostname_property_with_no_hostname_version_line(
+        self, config_from_file
+    ):
+        """Test setting the hostname when there is not a hostname configured
+        but there is a version line"""
+        hostname_line = self.find_hostname_line(config_from_file._parsed_config)
+        hostname_line.delete()
+        config_from_file._parsed_config.commit()
+        config_from_file.hostname = "foo"
+        assert config_from_file.hostname == "foo"
+        hostname_line = self.find_hostname_line(config_from_file._parsed_config)
+        assert hostname_line.text == "hostname foo"
+
+    def test_setting_hostname_property_with_empty_config(self, empty_config):
+        empty_config.hostname = "foo"
+        assert empty_config.hostname == "foo"
+        hostname_line = self.find_hostname_line(empty_config._parsed_config)
+        assert hostname_line.text == "hostname foo"
+        assert len(empty_config._parsed_config.get_text()) == 2
