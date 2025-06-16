@@ -1,7 +1,7 @@
 """
-Data Models fo configuration options
+Data models for Cisco interface configuration options.
 
-This module provides dataclasses for structuring configuration options.
+This module provides dataclasses and enums for structuring interface configuration options.
 """
 
 from dataclasses import dataclass
