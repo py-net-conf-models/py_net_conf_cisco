@@ -107,7 +107,7 @@ class CiscoConfig:
                 else:
                     self._unexpected_config_line(line)
         else:
-            self._unexpected_config_line(line)
+            raise ValueError("Found multiple interfaces")
         return found
 
     def set_interface(self, interface: InterfaceConfig) -> bool:
@@ -177,6 +177,6 @@ class CiscoConfig:
                 else:
                     self._unexpected_config_line(line.text)
         else:
-            self._unexpected_config_line(line.text)
+            raise ValueError("Found multiple interfaces")
         self._parsed_config.commit()
         return True
