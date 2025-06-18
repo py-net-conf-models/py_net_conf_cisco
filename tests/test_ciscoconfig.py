@@ -159,3 +159,33 @@ class TestCiscoConfig:
     )
     def test_getting_interface(self, config_from_file, interface, expected):
         assert config_from_file.get_interface(interface) == expected
+
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            # No change to the secondary IPs
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addreses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
+            # Removal of secondaries,
+            # More secondaries,
+            # Less secondaries,
+            # Change secondaries,
+            # Change and more secondaries,
+            # Change and less secondaries,
+            # Start with blank interface,
+            # Start with no interface,
+        ],
+    )
+    def test_setting_interface(self, config_from_file, interface):
+        assert config_from_file.set_interface(interface) is True
+        assert config_from_file.get_interface(interface) == interface
