@@ -101,4 +101,6 @@ class CiscoConfig:
                     found.vrf = line_split[2]
                 else:
                     self._unexpected_config_line(line.text)
+        else:
+            self._unexpected_config_line(line.text)
         return found
