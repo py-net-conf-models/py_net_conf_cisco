@@ -38,6 +38,12 @@ interface Vlan10
  ip address 10.0.10.1 255.255.255.0
  no shutdown
 !
+interface Vlan20
+ description VRF VLAN
+ vrf forwarding Blue
+ ip address 10.10.10.1 255.255.255.0
+ no shutdown
+!
 ip default-gateway 192.168.1.254
 !
 access-list 10 permit 192.168.1.0 0.0.0.255

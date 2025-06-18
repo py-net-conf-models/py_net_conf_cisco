@@ -84,5 +84,7 @@ class CiscoConfig:
                     found.shutdown = True
                 elif line.re_search(r"^\s+no shutdown"):
                     found.shutdown = False
+                elif line.re_search(r"^\s+vrf forwarding"):
+                    found.vrf = line_split[2]
 
         return found

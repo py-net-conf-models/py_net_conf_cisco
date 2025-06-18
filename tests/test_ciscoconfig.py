@@ -122,6 +122,21 @@ class TestCiscoConfig:
                     shutdown=False,
                 ),
             ),
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="20",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="20",
+                    description="VRF VLAN",
+                    ip_address=IPv4Interface("10.10.10.1/24"),
+                    dhcp_assigned=False,
+                    shutdown=False,
+                    vrf="Blue",
+                ),
+            ),
         ],
     )
     def test_getting_interface(self, config_from_file, interface, expected):
