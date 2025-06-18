@@ -105,6 +105,7 @@ class TestCiscoConfig:
                     description="Server VLAN",
                     ip_address=IPv4Interface("10.0.10.1/24"),
                     dhcp_assigned=False,
+                    shutdown=False,
                 ),
             ),
             (
@@ -118,6 +119,7 @@ class TestCiscoConfig:
                     description="DHCP Test Interface",
                     ip_address=None,
                     dhcp_assigned=True,
+                    shutdown=False,
                 ),
             ),
         ],

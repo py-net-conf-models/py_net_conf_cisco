@@ -80,5 +80,9 @@ class CiscoConfig:
                     # TODO: Handle secondaries IP addresses
                 elif line.re_search(r"description\s+(\S.+)"):
                     found.description = " ".join(line_split[1:])
+                elif line.re_search(r"^\s+shutdown"):
+                    found.shutdown = True
+                elif line.re_search(r"^\s+no shutdown"):
+                    found.shutdown = False
 
         return found
