@@ -136,8 +136,10 @@ class CiscoConfig:
                                     r"\d.*",
                                     f"{interface.ip_address.ip} {interface.ip_address.netmask}",
                                 )
-                            # elif len(line_split) == 5:
-                            #     if line_split[4] == "secondary":
+                    elif len(line_split) == 5:
+                        if line_split[4] == "secondary":
+                            if len(interface.secondary_ip_addreses) == 0:
+                                line.re_sub(r"\S.+", "!")
                             #         found.secondary_ip_addreses.append(
                             #             IPv4Interface(
                             #                 f"{line_split[2]}/{line_split[3]}"
@@ -169,4 +171,5 @@ class CiscoConfig:
                     self._unexpected_config_line(line.text)
         else:
             self._unexpected_config_line(line.text)
+        self._parsed_config.commit()
         return True
