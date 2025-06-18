@@ -101,6 +101,9 @@ class CiscoConfig:
                     found.shutdown = False
                 elif line.re_search(r"^\s+vrf forwarding"):
                     found.vrf = line_split[2]
+                elif line.re_search(r"^\s+!.*"):
+                    # Ignore lines htat have been commented out
+                    continue
                 else:
                     self._unexpected_config_line(line)
         else:
