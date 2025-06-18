@@ -72,12 +72,23 @@ class CiscoConfig:
                 if line.re_search(r"\s+ip\s+address\s"):
                     if line_split[2] == "dhcp":
                         found.dhcp_assigned = True
-                    elif len(line_split) > 3:
+                    elif len(line_split) == 4:
                         found.dhcp_assigned = False
                         found.ip_address = IPv4Interface(
                             f"{line_split[2]}/{line_split[3]}"
                         )
-                    # TODO: Handle secondaries IP addresses
+                    elif len(line_split) == 5:
+                        if line_split[4] == "secondary":
+                            found.secondary_ip_addreses.append(
+                                IPv4Interface(
+                                    f"{line_split[2]}/{line_split[3]}"
+                                )
+                            )
+                        else:
+                            raise ValueError(
+                                f"Unknown config line: {line.text}"
+                            )
+
                 elif line.re_search(r"description\s+(\S.+)"):
                     found.description = " ".join(line_split[1:])
                 elif line.re_search(r"^\s+shutdown"):

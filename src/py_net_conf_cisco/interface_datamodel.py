@@ -4,7 +4,7 @@ Data models for Cisco interface configuration options.
 This module provides dataclasses and enums for structuring interface configuration options.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from ipaddress import IPv4Interface
 from typing import Optional
@@ -41,6 +41,7 @@ class InterfaceConfig:
             dhcp_assigned: If True, IP address is assigned by DHCP.
             description: Optional interface description.
             shutdown: If True, the interface is administratively shut down.
+            secondary_ip_addreses: Optional list of secondary  IPv4 interface address (ipaddress.IPv4Interface).
     """
 
     interface_type: InterfaceType
@@ -51,6 +52,7 @@ class InterfaceConfig:
     dhcp_assigned: Optional[bool] = None
     description: Optional[str] = None
     shutdown: Optional[bool] = None
+    secondary_ip_addreses: list[IPv4Interface] = field(default_factory=list)
 
     def __post_init__(self):
         # Verify that the ip address the interface has is either DHCP or staticall assigned.

@@ -137,6 +137,24 @@ class TestCiscoConfig:
                     vrf="Blue",
                 ),
             ),
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="30",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="30",
+                    description="VRF VLAN with secondary IPs",
+                    ip_address=IPv4Interface("10.20.10.1/24"),
+                    dhcp_assigned=False,
+                    shutdown=False,
+                    vrf="Blue",
+                    secondary_ip_addreses=[
+                        IPv4Interface("10.20.20.1/24"),
+                    ],
+                ),
+            ),
         ],
     )
     def test_getting_interface(self, config_from_file, interface, expected):
