@@ -55,6 +55,9 @@ class CiscoConfig:
                 else:
                     self._parsed_config = CiscoConfParse([f"hostname {value}"])
 
+    def unexpected_config_line(self, line):
+        raise ValueError(f"Unexpected config line: {line.text}")
+
     def get_interface(self, interface: InterfaceConfig) -> InterfaceConfig:
         """Return an InterfaceConfig object of the interface configuration"""
         found = InterfaceConfig(
@@ -85,10 +88,9 @@ class CiscoConfig:
                                 )
                             )
                         else:
-                            raise ValueError(
-                                f"Unknown config line: {line.text}"
-                            )
-
+                            self.unexpected_config_line(line.text)
+                    else:
+                        self.unexpected_config_line(line.text)
                 elif line.re_search(r"description\s+(\S.+)"):
                     found.description = " ".join(line_split[1:])
                 elif line.re_search(r"^\s+shutdown"):
@@ -97,5 +99,6 @@ class CiscoConfig:
                     found.shutdown = False
                 elif line.re_search(r"^\s+vrf forwarding"):
                     found.vrf = line_split[2]
-
+                else:
+                    self.unexpected_config_line(line.text)
         return found
