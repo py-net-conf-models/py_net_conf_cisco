@@ -104,6 +104,20 @@ class TestCiscoConfig:
                     interface_number="10",
                     description="Server VLAN",
                     ip_address=IPv4Interface("10.0.10.1/24"),
+                    dhcp_assigned=False,
+                ),
+            ),
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.GIGABITETHERNET,
+                    interface_number="0/3",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.GIGABITETHERNET,
+                    interface_number="0/3",
+                    description="DHCP Test Interface",
+                    ip_address=None,
+                    dhcp_assigned=True,
                 ),
             ),
         ],

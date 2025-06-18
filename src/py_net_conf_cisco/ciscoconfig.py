@@ -1,9 +1,9 @@
+from copy import copy
 from ipaddress import IPv4Interface
 from pathlib import Path
 from typing import Optional, Union
 
 from ciscoconfparse2 import CiscoConfParse
-from ciscoconfparse2.ccp_util import IPv4Obj
 
 from .interface_datamodel import InterfaceConfig
 
@@ -58,24 +58,27 @@ class CiscoConfig:
     def get_interface(self, interface: InterfaceConfig) -> InterfaceConfig:
         """Return an InterfaceConfig object of the interface configuration"""
         found = InterfaceConfig(
-            interface.interface_type,
+            copy(interface.interface_type),
             interface.interface_number,
             interface.subinterface_number,
         )
         interface_text = interface.interface_line()
         interface_lines = self._parsed_config.find_objects(interface_text)
-        if len(interface_lines) < 0:
-            return found
-        ipv4_addresses = interface_lines[0].re_list_iter_typed(
-            r"ip\s+address\s+(\S.+)", result_type=IPv4Obj
-        )
-        if ipv4_addresses:
-            found.ip_address = IPv4Interface(
-                f"{str(ipv4_addresses[0].ip)}/{ipv4_addresses[0].prefixlen}"
-            )
-        descriptions = interface_lines[0].re_list_iter_typed(
-            r"description\s+(\S.+)", result_type=str
-        )
-        if descriptions:
-            found.description = descriptions[0]
+        interfaces_found = len(interface_lines)
+        if interfaces_found == 1:
+            for line in interface_lines[0].children:
+                line_split = line.text.split()
+                # Handle lines starting with " ip address"
+                if line.re_search(r"\s+ip\s+address\s"):
+                    if line_split[2] == "dhcp":
+                        found.dhcp_assigned = True
+                    elif len(line_split) > 3:
+                        found.dhcp_assigned = False
+                        found.ip_address = IPv4Interface(
+                            f"{line_split[2]}/{line_split[3]}"
+                        )
+                    # TODO: Handle secondaries IP addresses
+                elif line.re_search(r"description\s+(\S.+)"):
+                    found.description = " ".join(line_split[1:])
+
         return found

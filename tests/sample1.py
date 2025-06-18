@@ -24,6 +24,11 @@ interface GigabitEthernet0/2
  switchport trunk encapsulation dot1q
  switchport mode trunk
 !
+interface GigabitEthernet0/3
+ description DHCP Test Interface
+ ip address dhcp
+ no shutdown
+!
 interface Vlan1
  ip address 192.168.1.1 255.255.255.0
  no shutdown
