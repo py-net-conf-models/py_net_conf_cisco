@@ -154,14 +154,18 @@ class CiscoConfig:
                         r"description.*",
                         f"description {interface.description}",
                     )
-                elif (
-                    line.re_search(r"^\s+shutdown")
-                    and interface.shutdown is False
+                elif all(
+                    [
+                        line.re_search(r"^\s+shutdown"),
+                        interface.shutdown is False,
+                    ]
                 ):
                     line.re_sub(r"shutdown", "no shutdown")
-                elif (
-                    line.re_search(r"^\s+no shutdown")
-                    and interface.shutdown is True
+                elif all(
+                    [
+                        line.re_search(r"^\s+no shutdown"),
+                        interface.shutdown is True,
+                    ]
                 ):
                     line.re_sub(r"no ", "")
                 elif line.re_search(r"^\s+vrf forwarding"):
