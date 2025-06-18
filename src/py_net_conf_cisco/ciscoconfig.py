@@ -117,7 +117,10 @@ class CiscoConfig:
                 line_split = line.text.split()
                 # Handle lines starting with " ip address"
                 if line.re_search(r"\s+ip\s+address\s"):
-                    if line_split[2] == "dhcp":
+                    if (
+                        line_split[2] == "dhcp"
+                        and interface.ip_address is not None
+                    ):
                         if interface.dhcp_assigned is False:
                             line.re_sub(
                                 r"dhcp.*",
@@ -126,7 +129,7 @@ class CiscoConfig:
                     elif len(line_split) == 4:
                         if interface.dhcp_assigned is True:
                             line.res_sub(r"\d.*", "dhcp")
-                        else:
+                        elif interface.ip_address is not None:
                             if line_split[2] != str(
                                 interface.ip_address.ip
                             ) or line_split[3] != str(
