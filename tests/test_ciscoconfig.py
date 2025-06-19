@@ -150,7 +150,7 @@ class TestCiscoConfig:
                     dhcp_assigned=False,
                     shutdown=False,
                     vrf="Blue",
-                    secondary_ip_addreses=[
+                    secondary_ip_addresses=[
                         IPv4Interface("10.20.20.1/24"),
                     ],
                 ),
@@ -172,7 +172,7 @@ class TestCiscoConfig:
                 dhcp_assigned=False,
                 shutdown=True,
                 vrf="Red,",
-                secondary_ip_addreses=[
+                secondary_ip_addresses=[
                     IPv4Interface("10.20.20.1/24"),
                 ],
             ),

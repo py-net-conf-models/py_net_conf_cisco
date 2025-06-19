@@ -84,7 +84,7 @@ class CiscoConfig:
                         )
                     elif len(line_split) == 5:
                         if line_split[4] == "secondary":
-                            found.secondary_ip_addreses.append(
+                            found.secondary_ip_addresses.append(
                                 IPv4Interface(
                                     f"{line_split[2]}/{line_split[3]}"
                                 )
@@ -112,6 +112,8 @@ class CiscoConfig:
 
     def set_interface(self, interface: InterfaceConfig) -> bool:
         interface_lines = self._find_interface_lines(interface)
+        secondary_lines_replaced = 0
+        new_secondary_lines = len(interface.secondary_ip_addresses)
         if len(interface_lines) == 1:
             for line in interface_lines[0].children:
                 line_split = line.text.split()
@@ -141,8 +143,19 @@ class CiscoConfig:
                                 )
                     elif len(line_split) == 5:
                         if line_split[4] == "secondary":
-                            if len(interface.secondary_ip_addreses) == 0:
-                                line.re_sub(r"\S.+", "!")
+                            if new_secondary_lines == 0:
+                                line.re_sub(r"ip address.*", "!")
+                            if secondary_lines_replaced < new_secondary_lines:
+                                line.re_sub(
+                                    r"ip address.*",
+                                    f"ip address {str(interface.secondary_ip_addresses[secondary_lines_replaced].ip)} {str(interface.secondary_ip_addresses[secondary_lines_replaced].netmask)} secondary",
+                                )
+                                secondary_lines_replaced += 1
+
+                            # May need remove the next two lines.
+                            # if len(interface.secondary_ip_addresses) == 0:
+
+                            #     line.re_sub(r"\S.+", "!")
                             #         found.secondary_ip_addreses.append(
                             #             IPv4Interface(
                             #                 f"{line_split[2]}/{line_split[3]}"
