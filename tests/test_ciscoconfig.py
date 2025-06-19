@@ -201,6 +201,18 @@ class TestCiscoConfig:
                 ],
             ),
             # Less secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="40",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
             # Change secondaries,
             # Change and more secondaries,
             # Change and less secondaries,

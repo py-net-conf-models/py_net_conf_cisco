@@ -112,11 +112,13 @@ class CiscoConfig:
 
     def set_interface(self, interface: InterfaceConfig) -> bool:
         interface_lines = self._find_interface_lines(interface)
+        interface_line = interface_lines[0]
         secondary_lines_replaced = 0
+        secondary_lines_found = 0
         new_secondary_lines = len(interface.secondary_ip_addresses)
         last_found_secondary_line = None
         if len(interface_lines) == 1:
-            for line in interface_lines[0].children:
+            for line in interface_line.children:
                 line_split = line.text.split()
                 # Handle lines starting with " ip address"
                 if line.re_search(r"\s+ip\s+address\s"):
@@ -145,28 +147,23 @@ class CiscoConfig:
                     elif len(line_split) == 5:
                         if line_split[4] == "secondary":
                             last_found_secondary_line = line
-                            if new_secondary_lines == 0:
+                            secondary_lines_found += 1
+                            # No secondary IPs wanted
+                            if any(
+                                [
+                                    new_secondary_lines == 0,
+                                    secondary_lines_found > new_secondary_lines,
+                                ]
+                            ):
                                 line.re_sub(r"ip address.*", "!")
+                            # Changing a secondary IP address
                             if secondary_lines_replaced < new_secondary_lines:
                                 line.re_sub(
                                     r"ip address.*",
                                     f"ip address {str(interface.secondary_ip_addresses[secondary_lines_replaced].ip)} {str(interface.secondary_ip_addresses[secondary_lines_replaced].netmask)} secondary",
                                 )
-                                secondary_lines_replaced += 1
+                            secondary_lines_replaced += 1
 
-                            # May need remove the next two lines.
-                            # if len(interface.secondary_ip_addresses) == 0:
-
-                            #     line.re_sub(r"\S.+", "!")
-                            #         found.secondary_ip_addreses.append(
-                            #             IPv4Interface(
-                            #                 f"{line_split[2]}/{line_split[3]}"
-                            #             )
-                            #         )
-                            #     else:
-                            #         self._unexpected_config_line(line.text)
-                            # else:
-                            #     self._unexpected_config_line(line.text)
                 elif line.re_search(r"description\s+(\S.+)"):
                     line.re_sub(
                         r"description.*",
@@ -193,6 +190,7 @@ class CiscoConfig:
                     self._unexpected_config_line(line.text)
         else:
             raise ValueError("Found multiple interfaces")
+
         if secondary_lines_replaced < new_secondary_lines:
             if last_found_secondary_line is None:
                 # Handle not finding any secondary IPs
