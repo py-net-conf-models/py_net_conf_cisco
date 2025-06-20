@@ -176,6 +176,19 @@ class TestCiscoConfig:
                     IPv4Interface("10.20.20.1/24"),
                 ],
             ),
+            # Change secondaries
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.10.10.1/24"),
+                ],
+            ),
             # Removal of secondaries,
             InterfaceConfig(
                 interface_type=InterfaceType.VLAN,
@@ -210,12 +223,37 @@ class TestCiscoConfig:
                 shutdown=True,
                 vrf="Red,",
                 secondary_ip_addresses=[
+                    IPv4Interface("10.30.10.1/24"),
+                ],
+            ),
+            # Change and more secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("2.2.2.2/24"),
+                    IPv4Interface("3.3.3.3/24"),
+                ],
+            ),
+            # Change and less secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="40",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
                     IPv4Interface("10.20.20.1/24"),
                 ],
             ),
-            # Change secondaries,
-            # Change and more secondaries,
-            # Change and less secondaries,
+            # Add secondary IP when there was none
             # Start with blank interface,
             # Start with no interface,
         ],
