@@ -94,6 +94,7 @@ class TestInterfaceConfig:
             },
             ["interface Ethernet1", "!"],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "",
                 "vrf_string": "",
                 "ip_string": "",
@@ -113,6 +114,7 @@ class TestInterfaceConfig:
                 "!",
             ],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "",
                 "vrf_string": "",
                 "ip_string": "ip address 192.168.1.1 255.255.255.0",
@@ -134,6 +136,7 @@ class TestInterfaceConfig:
                 "!",
             ],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "",
                 "vrf_string": "vrf forwarding test",
                 "ip_string": "ip address 1.1.1.1 255.255.255.0",
@@ -153,6 +156,7 @@ class TestInterfaceConfig:
                 "!",
             ],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "",
                 "vrf_string": "",
                 "ip_string": "ip address dhcp",
@@ -168,6 +172,7 @@ class TestInterfaceConfig:
             },
             ["interface Ethernet1", " description Test description", "!"],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "description Test description",
                 "vrf_string": "",
                 "ip_string": "",
@@ -183,6 +188,7 @@ class TestInterfaceConfig:
             },
             ["interface Ethernet1", " shutdown", "!"],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "",
                 "vrf_string": "",
                 "ip_string": "",
@@ -198,6 +204,7 @@ class TestInterfaceConfig:
             },
             ["interface Ethernet1", " no shutdown", "!"],
             {
+                "interface_string": "interface Ethernet1",
                 "description_string": "",
                 "vrf_string": "",
                 "ip_string": "",
@@ -223,6 +230,7 @@ class TestInterfaceConfig:
                 "!",
             ],
             {
+                "interface_string": "interface Vlan10",
                 "description_string": "",
                 "vrf_string": "",
                 "ip_string": "ip address 10.0.10.1 255.255.255.0",
@@ -250,6 +258,9 @@ class TestInterfaceConfig:
         self, kwargs, expected_lines, expected_strings
     ):
         interface = InterfaceConfig(**kwargs)
+        assert (
+            interface.interface_string() == expected_strings["interface_string"]
+        )
         assert (
             interface.description_string()
             == expected_strings["description_string"]

@@ -92,6 +92,9 @@ class InterfaceConfig:
         lines.append("!")
         return lines
 
+    def interface_string(self) -> str:
+        return f"interface {self.interface_type.value}{self.interface_number}"
+
     def description_string(self) -> str:
         return f"description {self.description}" if self.description else ""
 
