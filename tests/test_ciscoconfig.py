@@ -278,6 +278,18 @@ class TestCiscoConfig:
                 ],
             ),
             # Start with no interface,
+            InterfaceConfig(
+                interface_type=InterfaceType.GIGABITETHERNET,
+                interface_number="0/5",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
         ],
     )
     def test_setting_interface(self, config_from_file, interface):
