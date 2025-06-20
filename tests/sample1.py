@@ -29,6 +29,8 @@ interface GigabitEthernet0/3
  ip address dhcp
  no shutdown
 !
+interface GigabitEthernet0/4
+!
 interface Vlan1
  ip address 192.168.1.1 255.255.255.0
  no shutdown
