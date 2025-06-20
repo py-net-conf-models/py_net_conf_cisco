@@ -85,99 +85,181 @@ class TestInterfaceConfig:
             )
             return interface
 
-    @pytest.mark.parametrize(
-        "kwargs,expected_lines",
-        [
-            (  # Test with minimal configuration
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": "1",
-                },
-                ["interface Ethernet1", "!"],
-            ),
-            (  # Test with an IP address
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": "1",
-                    "ip_address": ipaddress.IPv4Interface("192.168.1.1/24"),
-                },
-                [
-                    "interface Ethernet1",
-                    " ip address 192.168.1.1 255.255.255.0",
-                    "!",
+    # Testing parameterization cases
+    cases = [
+        (
+            {  # Test with minimal configuration
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": "1",
+            },
+            ["interface Ethernet1", "!"],
+            {
+                "description_string": "",
+                "vrf_string": "",
+                "ip_string": "",
+                "secondary_ip_strings": [],
+                "shutdown_string": "",
+            },
+        ),
+        (  # Test with an IP address
+            {
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": "1",
+                "ip_address": ipaddress.IPv4Interface("192.168.1.1/24"),
+            },
+            [
+                "interface Ethernet1",
+                " ip address 192.168.1.1 255.255.255.0",
+                "!",
+            ],
+            {
+                "description_string": "",
+                "vrf_string": "",
+                "ip_string": "ip address 192.168.1.1 255.255.255.0",
+                "secondary_ip_strings": [],
+                "shutdown_string": "",
+            },
+        ),
+        (  # Test with an IP address and a VRF)
+            {
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": "1",
+                "ip_address": ipaddress.IPv4Interface("1.1.1.1/24"),
+                "vrf": "test",
+            },
+            [
+                "interface Ethernet1",
+                " vrf forwarding test",
+                " ip address 1.1.1.1 255.255.255.0",
+                "!",
+            ],
+            {
+                "description_string": "",
+                "vrf_string": "vrf forwarding test",
+                "ip_string": "ip address 1.1.1.1 255.255.255.0",
+                "secondary_ip_strings": [],
+                "shutdown_string": "",
+            },
+        ),
+        (  # Test with DHCP address
+            {
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": "1",
+                "dhcp_assigned": True,
+            },
+            [
+                "interface Ethernet1",
+                " ip address dhcp",
+                "!",
+            ],
+            {
+                "description_string": "",
+                "vrf_string": "",
+                "ip_string": "ip address dhcp",
+                "secondary_ip_strings": [],
+                "shutdown_string": "",
+            },
+        ),
+        (  # Test with a description
+            {
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": 1,
+                "description": "Test description",
+            },
+            ["interface Ethernet1", " description Test description", "!"],
+            {
+                "description_string": "description Test description",
+                "vrf_string": "",
+                "ip_string": "",
+                "secondary_ip_strings": [],
+                "shutdown_string": "",
+            },
+        ),
+        (  # Test with shutdown
+            {
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": "1",
+                "shutdown": True,
+            },
+            ["interface Ethernet1", " shutdown", "!"],
+            {
+                "description_string": "",
+                "vrf_string": "",
+                "ip_string": "",
+                "secondary_ip_strings": [],
+                "shutdown_string": "shutdown",
+            },
+        ),
+        (  # Test with shutdown False
+            {
+                "interface_type": InterfaceType.ETHERNET,
+                "interface_number": "1",
+                "shutdown": False,
+            },
+            ["interface Ethernet1", " no shutdown", "!"],
+            {
+                "description_string": "",
+                "vrf_string": "",
+                "ip_string": "",
+                "secondary_ip_strings": [],
+                "shutdown_string": "no shutdown",
+            },
+        ),
+        (  # Test with secondary IPs
+            {
+                "interface_type": InterfaceType.VLAN,
+                "interface_number": "10",
+                "ip_address": IPv4Interface("10.0.10.1/24"),
+                "secondary_ip_addresses": [
+                    IPv4Interface("10.0.11.1/24"),
+                    IPv4Interface("10.0.12.1/24"),
                 ],
-            ),
-            (  # Test with an IP address and a VRF)
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": "1",
-                    "ip_address": ipaddress.IPv4Interface("1.1.1.1/24"),
-                    "vrf": "test",
-                },
-                [
-                    "interface Ethernet1",
-                    " vrf forwarding test",
-                    " ip address 1.1.1.1 255.255.255.0",
-                    "!",
+            },
+            [
+                "interface Vlan10",
+                " ip address 10.0.10.1 255.255.255.0",
+                " ip address 10.0.11.1 255.255.255.0 secondary",
+                " ip address 10.0.12.1 255.255.255.0 secondary",
+                "!",
+            ],
+            {
+                "description_string": "",
+                "vrf_string": "",
+                "ip_string": "ip address 10.0.10.1 255.255.255.0",
+                "secondary_ip_strings": [
+                    "ip address 10.0.11.1 255.255.255.0 secondary",
+                    "ip address 10.0.12.1 255.255.255.0 secondary",
                 ],
-            ),
-            (  # Test with DHCP address
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": "1",
-                    "dhcp_assigned": True,
-                },
-                [
-                    "interface Ethernet1",
-                    " ip address dhcp",
-                    "!",
-                ],
-            ),
-            (  # Test with a description
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": 1,
-                    "description": "Test description",
-                },
-                ["interface Ethernet1", " description Test description", "!"],
-            ),
-            (  # Test with shutdown
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": "1",
-                    "shutdown": True,
-                },
-                ["interface Ethernet1", " shutdown", "!"],
-            ),
-            (  # Test with shutdown False
-                {
-                    "interface_type": InterfaceType.ETHERNET,
-                    "interface_number": "1",
-                    "shutdown": False,
-                },
-                ["interface Ethernet1", " no shutdown", "!"],
-            ),
-            (  # Test with secondary IPs
-                {
-                    "interface_type": InterfaceType.VLAN,
-                    "interface_number": "10",
-                    "ip_address": IPv4Interface("10.0.10.1/24"),
-                    "secondary_ip_addresses": [
-                        IPv4Interface("10.0.11.1/24"),
-                        IPv4Interface("10.0.12.1/24"),
-                    ],
-                },
-                [
-                    "interface Vlan10",
-                    " ip address 10.0.10.1 255.255.255.0",
-                    " ip address 10.0.11.1 255.255.255.0 secondary",
-                    " ip address 10.0.12.1 255.255.255.0 secondary",
-                    "!",
-                ],
-            ),
-        ],
-    )
-    def test_to_config_lines_various(self, kwargs, expected_lines):
+                "shutdown_string": "",
+            },
+        ),
+    ]
+
+    @pytest.mark.parametrize("kwargs,expected_lines,expected_strings", cases)
+    def test_to_interface_line(self, kwargs, expected_lines, expected_strings):
         interface = InterfaceConfig(**kwargs)
         assert interface.interface_line() == expected_lines[0]
+
+    @pytest.mark.parametrize("kwargs,expected_lines,expected_strings", cases)
+    def test_to_config_lines(self, kwargs, expected_lines, expected_strings):
+        interface = InterfaceConfig(**kwargs)
         assert interface.to_config_lines() == expected_lines
+
+    @pytest.mark.parametrize("kwargs,expected_lines,expected_strings", cases)
+    def test_to_expected_strings(
+        self, kwargs, expected_lines, expected_strings
+    ):
+        interface = InterfaceConfig(**kwargs)
+        assert (
+            interface.description_string()
+            == expected_strings["description_string"]
+        )
+        assert interface.vrf_string() == expected_strings["vrf_string"]
+        assert interface.ip_string() == expected_strings["ip_string"]
+        assert (
+            interface.secondary_ip_strings()
+            == expected_strings["secondary_ip_strings"]
+        )
+        assert (
+            interface.shutdown_string() == expected_strings["shutdown_string"]
+        )

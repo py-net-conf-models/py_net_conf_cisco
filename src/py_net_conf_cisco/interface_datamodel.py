@@ -91,3 +91,29 @@ class InterfaceConfig:
             lines.append(f" {'no ' if not self.shutdown else ''}shutdown")
         lines.append("!")
         return lines
+
+    def description_string(self) -> str:
+        return f"description {self.description}" if self.description else ""
+
+    def vrf_string(self) -> str:
+        return f"vrf forwarding {self.vrf}" if self.vrf else ""
+
+    def ip_string(self) -> str:
+        if self.dhcp_assigned:
+            return "ip address dhcp"
+        if self.ip_address:
+            return f"ip address {self.ip_address.ip} {self.ip_address.netmask}"
+        return ""
+
+    def secondary_ip_strings(self) -> list[str]:
+        strings = []
+        if self.secondary_ip_addresses:
+            for ip in self.secondary_ip_addresses:
+                strings.append(f"ip address {ip.ip} {ip.netmask} secondary")
+        return strings
+
+    def shutdown_string(self) -> str:
+        if self.shutdown is None:
+            return ""
+        else:
+            return f"{'no ' if not self.shutdown else ''}shutdown"
