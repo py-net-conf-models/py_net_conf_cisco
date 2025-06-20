@@ -149,6 +149,32 @@ class TestInterfaceConfig:
                 },
                 ["interface Ethernet1", " shutdown", "!"],
             ),
+            (  # Test with shutdown False
+                {
+                    "interface_type": InterfaceType.ETHERNET,
+                    "interface_number": "1",
+                    "shutdown": False,
+                },
+                ["interface Ethernet1", " no shutdown", "!"],
+            ),
+            (  # Test with secondary IPs
+                {
+                    "interface_type": InterfaceType.VLAN,
+                    "interface_number": "10",
+                    "ip_address": IPv4Interface("10.0.10.1/24"),
+                    "secondary_ip_addresses": [
+                        IPv4Interface("10.0.11.1/24"),
+                        IPv4Interface("10.0.12.1/24"),
+                    ],
+                },
+                [
+                    "interface Vlan10",
+                    " ip address 10.0.10.1 255.255.255.0",
+                    " ip address 10.0.11.1 255.255.255.0 secondary",
+                    " ip address 10.0.12.1 255.255.255.0 secondary",
+                    "!",
+                ],
+            ),
         ],
     )
     def test_to_config_lines_various(self, kwargs, expected_lines):

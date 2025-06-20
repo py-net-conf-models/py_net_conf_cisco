@@ -22,8 +22,8 @@ class InterfaceType(Enum):
     FORTYGIGABITETHERNET = "FortyGigabitEthernet"
     HUNDREDGIGABITETHERNET = "HundredGigE"
     VLAN = "Vlan"
-    LOOPBACK = "loopback"
-    PORT_CHANNEL = "port-channel"
+    LOOPBACK = "Loopback"
+    PORT_CHANNEL = "Port-channel"
     NVE = "nve"
 
 
@@ -62,7 +62,9 @@ class InterfaceConfig:
                 self.dhcp_assigned is False and self.ip_address is None,
             ]
         ):
-            raise Exception
+            raise ValueError(
+                "An interface cannot have both a static IP and be configured for DHCP."
+            )
 
     def interface_line(self):
         """Return the the parent line for the interface configuration"""
@@ -83,7 +85,9 @@ class InterfaceConfig:
             )
         elif self.dhcp_assigned:
             lines.append(" ip address dhcp")
+        for ip in self.secondary_ip_addresses:
+            lines.append(f" ip address {ip.ip} {ip.netmask} secondary")
         if self.shutdown is not None:
-            lines.append(" shutdown")
+            lines.append(f" {'no ' if not self.shutdown else ''}shutdown")
         lines.append("!")
         return lines
