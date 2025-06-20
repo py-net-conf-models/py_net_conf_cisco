@@ -60,7 +60,7 @@ class CiscoConfig:
 
     def _find_interface_lines(self, interface: InterfaceConfig):
         interface_text = interface.interface_line()
-        return self._parsed_config.find_objects(interface_text)
+        return self._parsed_config.find_objects(r"^" + interface_text + r"$")
 
     def get_interface(self, interface: InterfaceConfig) -> InterfaceConfig:
         """Return an InterfaceConfig object of the interface configuration"""
@@ -117,11 +117,13 @@ class CiscoConfig:
         secondary_lines_found = 0
         new_secondary_lines = len(interface.secondary_ip_addresses)
         last_found_secondary_line = None
+        primary_ip_line = None
         if len(interface_lines) == 1:
             for line in interface_line.children:
                 line_split = line.text.split()
                 # Handle lines starting with " ip address"
                 if line.re_search(r"\s+ip\s+address\s"):
+                    primary_ip_line = line
                     if (
                         line_split[2] == "dhcp"
                         and interface.ip_address is not None
@@ -169,39 +171,37 @@ class CiscoConfig:
                         r"description.*",
                         f"description {interface.description}",
                     )
-                elif all(
-                    [
-                        line.re_search(r"^\s+shutdown"),
-                        interface.shutdown is False,
-                    ]
-                ):
-                    line.re_sub(r"shutdown", "no shutdown")
-                elif all(
-                    [
-                        line.re_search(r"^\s+no shutdown"),
-                        interface.shutdown is True,
-                    ]
-                ):
-                    line.re_sub(r"no ", "")
+                elif line.re_search(r"^\s+shutdown"):
+                    if interface.shutdown is False:
+                        line.re_sub(r"shutdown", "no shutdown")
+                elif line.re_search(r"^\s+no shutdown"):
+                    if interface.shutdown is True:
+                        line.re_sub(r"no ", "")
                 elif line.re_search(r"^\s+vrf forwarding"):
                     if interface.vrf != line_split[2]:
                         line.re_sub(r"vrf.*", f"vrf forwarding {interface.vrf}")
                 else:
-                    self._unexpected_config_line(line.text)
+                    self._unexpected_config_line(line)
         else:
             raise ValueError("Found multiple interfaces")
 
         if secondary_lines_replaced < new_secondary_lines:
+            additional_secondary_lines = None
             if last_found_secondary_line is None:
                 # Handle not finding any secondary IPs
-                pass
+                if primary_ip_line:
+                    additional_secondary_lines = primary_ip_line
+                else:
+                    additional_secondary_lines = interface_line
             else:
-                while secondary_lines_replaced < new_secondary_lines:
-                    spacing = last_found_secondary_line.re_match(r"^(\s+)")
-                    last_found_secondary_line.insert_after(
-                        f"{spacing}ip address {str(interface.secondary_ip_addresses[secondary_lines_replaced].ip)} {str(interface.secondary_ip_addresses[secondary_lines_replaced].netmask)} secondary",
-                    )
-                    secondary_lines_replaced += 1
+                additional_secondary_lines = last_found_secondary_line
+
+            while secondary_lines_replaced < new_secondary_lines:
+                spacing = additional_secondary_lines.re_match(r"^(\s+)")
+                additional_secondary_lines.insert_after(
+                    f"{spacing}ip address {str(interface.secondary_ip_addresses[secondary_lines_replaced].ip)} {str(interface.secondary_ip_addresses[secondary_lines_replaced].netmask)} secondary",
+                )
+                secondary_lines_replaced += 1
 
         self._parsed_config.commit()
         return True

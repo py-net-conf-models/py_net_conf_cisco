@@ -254,6 +254,16 @@ class TestCiscoConfig:
                 ],
             ),
             # Add secondary IP when there was none
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="1",
+                ip_address=IPv4Interface("192.168.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=False,
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
             # Start with blank interface,
             # Start with no interface,
         ],
