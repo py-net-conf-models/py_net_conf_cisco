@@ -7,9 +7,7 @@ authors = [
     { name = "Troy Holder", email = "964446+troyholder@users.noreply.github.com" },
 ]
 requires-python = ">=3.13"
-dependencies = [
-    "ciscoconfparse2>=0.8.20",
-]
+dependencies = ["ciscoconfparse2>=0.8.20"]
 
 [build-system]
 requires = ["hatchling"]
@@ -18,4 +16,28 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
+    "pytest-cov>=6.2.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "--cov=py_net_conf_cisco",
+    "--cov-report=html",
+    "--cov-report=term",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/test_*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
 ]
