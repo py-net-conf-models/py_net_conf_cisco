@@ -24,6 +24,13 @@ interface GigabitEthernet0/2
  switchport trunk encapsulation dot1q
  switchport mode trunk
 !
+interface GigabitEthernet0/3
+ description DHCP Test Interface
+ ip address dhcp
+ no shutdown
+!
+interface GigabitEthernet0/4
+!
 interface Vlan1
  ip address 192.168.1.1 255.255.255.0
  no shutdown
@@ -31,6 +38,27 @@ interface Vlan1
 interface Vlan10
  description Server VLAN
  ip address 10.0.10.1 255.255.255.0
+ no shutdown
+!
+interface Vlan20
+ description VRF VLAN
+ vrf forwarding Blue
+ ip address 10.10.10.1 255.255.255.0
+ no shutdown
+!
+interface Vlan30
+ description VRF VLAN with secondary IPs
+ vrf forwarding Blue
+ ip address 10.20.10.1 255.255.255.0
+ ip address 10.20.20.1 255.255.255.0 secondary
+ no shutdown
+!
+interface Vlan40
+ description VRF VLAN with multiple secondary IPs
+ vrf forwarding Blue
+ ip address 10.30.10.1 255.255.255.0
+ ip address 10.30.20.1 255.255.255.0 secondary
+ ip address 10.30.30.1 255.255.255.0 secondary
  no shutdown
 !
 ip default-gateway 192.168.1.254

@@ -1,10 +1,12 @@
 import os
 import tempfile
+from ipaddress import IPv4Interface
 
 import pytest
 import sample1
 
-from py_net_conf_cisco import CiscoConfig
+from py_net_conf_cisco import CiscoConfig, InterfaceConfig
+from py_net_conf_cisco.interface_datamodel import InterfaceType
 
 
 class TestCiscoConfig:
@@ -88,3 +90,208 @@ class TestCiscoConfig:
         hostname_line = self.find_hostname_line(empty_config._parsed_config)
         assert hostname_line.text == "hostname foo"
         assert len(empty_config._parsed_config.get_text()) == 2
+
+    @pytest.mark.parametrize(
+        "interface,expected",
+        [
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="10",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="10",
+                    description="Server VLAN",
+                    ip_address=IPv4Interface("10.0.10.1/24"),
+                    dhcp_assigned=False,
+                    shutdown=False,
+                ),
+            ),
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.GIGABITETHERNET,
+                    interface_number="0/3",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.GIGABITETHERNET,
+                    interface_number="0/3",
+                    description="DHCP Test Interface",
+                    ip_address=None,
+                    dhcp_assigned=True,
+                    shutdown=False,
+                ),
+            ),
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="20",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="20",
+                    description="VRF VLAN",
+                    ip_address=IPv4Interface("10.10.10.1/24"),
+                    dhcp_assigned=False,
+                    shutdown=False,
+                    vrf="Blue",
+                ),
+            ),
+            (
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="30",
+                ),
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN,
+                    interface_number="30",
+                    description="VRF VLAN with secondary IPs",
+                    ip_address=IPv4Interface("10.20.10.1/24"),
+                    dhcp_assigned=False,
+                    shutdown=False,
+                    vrf="Blue",
+                    secondary_ip_addresses=[
+                        IPv4Interface("10.20.20.1/24"),
+                    ],
+                ),
+            ),
+        ],
+    )
+    def test_getting_interface(self, config_from_file, interface, expected):
+        assert config_from_file.get_interface(interface) == expected
+
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            # No change to the secondary IPs
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
+            # Change secondaries
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.10.10.1/24"),
+                ],
+            ),
+            # Removal of secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+            ),
+            # More secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                    IPv4Interface("10.20.21.1/24"),
+                ],
+            ),
+            # Less secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="40",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.30.10.1/24"),
+                ],
+            ),
+            # Change and more secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("2.2.2.2/24"),
+                    IPv4Interface("3.3.3.3/24"),
+                ],
+            ),
+            # Change and less secondaries,
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="40",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
+            # Add secondary IP when there was none
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="1",
+                ip_address=IPv4Interface("192.168.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=False,
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
+            # Start with blank interface,
+            InterfaceConfig(
+                interface_type=InterfaceType.GIGABITETHERNET,
+                interface_number="0/4",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
+            # Start with no interface,
+            InterfaceConfig(
+                interface_type=InterfaceType.GIGABITETHERNET,
+                interface_number="0/5",
+                description="Red VRF VLAN with secondary IPs",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
+        ],
+    )
+    def test_setting_interface(self, config_from_file, interface):
+        assert config_from_file.set_interface(interface) is True
+        assert config_from_file.get_interface(interface) == interface

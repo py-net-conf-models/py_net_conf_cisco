@@ -1,7 +1,12 @@
+from copy import copy
+from ipaddress import IPv4Interface
 from pathlib import Path
 from typing import Optional, Union
 
 from ciscoconfparse2 import CiscoConfParse
+from ciscoconfparse2.models_cisco import BaseCfgLine
+
+from .interface_datamodel import InterfaceConfig
 
 
 class CiscoConfig:
@@ -35,7 +40,7 @@ class CiscoConfig:
         return self._hostname
 
     @hostname.setter
-    def hostname(self, value) -> None:
+    def hostname(self, value: str) -> None:
         self._hostname = value
         if self._hostname_line:
             self._hostname_line.text = f"hostname {value}"
@@ -50,3 +55,198 @@ class CiscoConfig:
                     )
                 else:
                     self._parsed_config = CiscoConfParse([f"hostname {value}"])
+
+    def _unexpected_config_line(self, line):
+        raise ValueError(f"Unexpected config line: {line.text}")
+
+    def _find_interface_lines(self, interface: InterfaceConfig):
+        interface_text = interface.interface_line()
+        return self._parsed_config.find_objects(r"^" + interface_text + r"$")
+
+    def get_interface(self, interface: InterfaceConfig) -> InterfaceConfig:
+        """Return an InterfaceConfig object of the interface configuration"""
+        found = InterfaceConfig(
+            copy(interface.interface_type),
+            interface.interface_number,
+            interface.subinterface_number,
+        )
+        interface_lines = self._find_interface_lines(interface)
+        if len(interface_lines) == 1:
+            for line in interface_lines[0].children:
+                line_split = line.text.split()
+                # Handle lines starting with " ip address"
+                if line.re_search(r"\s+ip\s+address\s"):
+                    if line_split[2] == "dhcp":
+                        found.dhcp_assigned = True
+                    elif len(line_split) == 4:
+                        found.dhcp_assigned = False
+                        found.ip_address = IPv4Interface(
+                            f"{line_split[2]}/{line_split[3]}"
+                        )
+                    elif len(line_split) == 5:
+                        if line_split[4] == "secondary":
+                            found.secondary_ip_addresses.append(
+                                IPv4Interface(
+                                    f"{line_split[2]}/{line_split[3]}"
+                                )
+                            )
+                        else:
+                            self._unexpected_config_line(line)
+                    else:
+                        self._unexpected_config_line(line)
+                elif line.re_search(r"description\s+(\S.+)"):
+                    found.description = " ".join(line_split[1:])
+                elif line.re_search(r"^\s+shutdown"):
+                    found.shutdown = True
+                elif line.re_search(r"^\s+no shutdown"):
+                    found.shutdown = False
+                elif line.re_search(r"^\s+vrf forwarding"):
+                    found.vrf = line_split[2]
+                elif line.re_search(r"^\s+!.*"):
+                    # Ignore lines htat have been commented out
+                    continue
+                else:
+                    self._unexpected_config_line(line)
+        else:
+            raise ValueError("Found multiple interfaces")
+        return found
+
+    def _add_interface_config_after_line(
+        self, line: BaseCfgLine, interface: InterfaceConfig
+    ) -> None:
+        # Shutdown
+        if interface.shutdown is not None:
+            line.insert_after(" " + interface.shutdown_string())
+        # Secondary IPs
+        if interface.secondary_ip_addresses:
+            for secondary_ip in interface.secondary_ip_strings()[::-1]:
+                line.insert_after(" " + secondary_ip)
+        # IP
+        if interface.ip_address:
+            line.insert_after(" " + interface.ip_string())
+        # VRF
+        if interface.vrf:
+            line.insert_after(" " + interface.vrf_string())
+        # Description
+        if interface.description:
+            line.insert_after(" " + interface.description_string())
+
+    def set_interface(self, interface: InterfaceConfig) -> bool:
+        interface_lines = self._find_interface_lines(interface)
+        if len(interface_lines) == 0:
+            interfaces = self._parsed_config.find_objects(r"^interface")
+            first_interface = interfaces[0]
+            first_interface.insert_before(interface.interface_string())
+            self._parsed_config.commit()
+            lines = self._parsed_config.find_objects(
+                interface.interface_string()
+            )
+            self._add_interface_config_after_line(lines[0], interface)
+            self._parsed_config.commit()
+            return True
+
+        interface_line = interface_lines[0]
+        secondary_lines_replaced = 0
+        secondary_lines_found = 0
+        new_secondary_lines = len(interface.secondary_ip_addresses)
+        last_found_secondary_line = None
+        primary_ip_line = None
+
+        if len(interface_lines) == 1:
+            if not interface_line.has_children:
+                self._add_interface_config_after_line(interface_line, interface)
+                self._parsed_config.commit()
+                return True
+            else:
+                for line in interface_line.children:
+                    line_split = line.text.split()
+                    # Handle lines starting with " ip address"
+                    if line.re_search(r"\s+ip\s+address\s"):
+                        primary_ip_line = line
+                        if (
+                            line_split[2] == "dhcp"
+                            and interface.ip_address is not None
+                        ):
+                            if interface.dhcp_assigned is False:
+                                line.re_sub(
+                                    r"dhcp.*",
+                                    interface.ip_string(),
+                                )
+                        elif len(line_split) == 4:
+                            if interface.dhcp_assigned is True:
+                                line.res_sub(r"\S.**", interface.ip_string())
+                            elif interface.ip_address is not None:
+                                if line_split[2] != str(
+                                    interface.ip_address.ip
+                                ) or line_split[3] != str(
+                                    interface.ip_address.netmask
+                                ):
+                                    line.re_sub(
+                                        r"\S.*",
+                                        interface.ip_string(),
+                                    )
+                        elif len(line_split) == 5:
+                            if line_split[4] == "secondary":
+                                last_found_secondary_line = line
+                                secondary_lines_found += 1
+                                # No secondary IPs wanted
+                                if any(
+                                    [
+                                        new_secondary_lines == 0,
+                                        secondary_lines_found
+                                        > new_secondary_lines,
+                                    ]
+                                ):
+                                    line.re_sub(r"ip address.*", "!")
+                                # Changing a secondary IP address
+                                if (
+                                    secondary_lines_replaced
+                                    < new_secondary_lines
+                                ):
+                                    line.re_sub(
+                                        r"\S.*",
+                                        interface.secondary_ip_strings()[
+                                            secondary_lines_replaced
+                                        ],
+                                    )
+                                secondary_lines_replaced += 1
+
+                    elif line.re_search(r"description\s+(\S.+)"):
+                        line.re_sub(
+                            r"description.*",
+                            interface.description_string(),
+                        )
+                    elif line.re_search(r"^\s+shutdown"):
+                        if interface.shutdown is False:
+                            line.re_sub(r"\S.*", interface.shutdown_string())
+                    elif line.re_search(r"^\s+no shutdown"):
+                        if interface.shutdown is True:
+                            line.re_sub(r"\S.*", interface.shutdown_string())
+                    elif line.re_search(r"^\s+vrf forwarding"):
+                        if interface.vrf != line_split[2]:
+                            line.re_sub(r"vrf.*", interface.vrf_string())
+                    else:
+                        self._unexpected_config_line(line)
+        else:
+            raise ValueError("Found multiple interfaces")
+
+        if secondary_lines_replaced < new_secondary_lines:
+            additional_secondary_lines = None
+            if last_found_secondary_line is None:
+                # Handle not finding any secondary IPs
+                if primary_ip_line:
+                    additional_secondary_lines = primary_ip_line
+                else:
+                    additional_secondary_lines = interface_line
+            else:
+                additional_secondary_lines = last_found_secondary_line
+
+            while secondary_lines_replaced < new_secondary_lines:
+                spacing = additional_secondary_lines.re_match(r"^(\s+)")
+                additional_secondary_lines.insert_after(
+                    f"{spacing}{interface.secondary_ip_strings()[secondary_lines_replaced]}"
+                )
+                secondary_lines_replaced += 1
+
+        self._parsed_config.commit()
+        return True
