@@ -174,7 +174,7 @@ class CiscoConfig:
                                 )
                         elif len(line_split) == 4:
                             if interface.dhcp_assigned is True:
-                                line.res_sub(r"\S.**", interface.ip_string())
+                                line.re_sub(r"\S.*", interface.ip_string())
                             elif interface.ip_address is not None:
                                 if line_split[2] != str(
                                     interface.ip_address.ip

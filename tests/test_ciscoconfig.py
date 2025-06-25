@@ -176,6 +176,18 @@ class TestCiscoConfig:
                     IPv4Interface("10.20.20.1/24"),
                 ],
             ),
+            # Change interface to using DHCP
+            InterfaceConfig(
+                interface_type=InterfaceType.VLAN,
+                interface_number="30",
+                description="Red VRF VLAN with secondary IPs",
+                dhcp_assigned=True,
+                shutdown=True,
+                vrf="Red,",
+                secondary_ip_addresses=[
+                    IPv4Interface("10.20.20.1/24"),
+                ],
+            ),
             # Change secondaries
             InterfaceConfig(
                 interface_type=InterfaceType.VLAN,
