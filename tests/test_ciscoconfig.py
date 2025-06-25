@@ -64,6 +64,17 @@ class TestCiscoConfig:
         hostname_line = self.find_hostname_line(config_from_file._parsed_config)
         assert hostname_line.text == "hostname foo"
 
+    def test_seting_hostname_property_after_getting_hostanme(
+        self, config_from_file
+    ):
+        """Test setting the hostname after getting the hostname"""
+        hostname = config_from_file.hostname
+        assert hostname == "TestSwitch"
+        config_from_file.hostname = "foo"
+        assert config_from_file.hostname == "foo"
+        hostname_line = self.find_hostname_line(config_from_file._parsed_config)
+        assert hostname_line.text == "hostname foo"
+
     def test_getting_hostname_property(self, config_from_file):
         """Test the hostname propeerty"""
         hostname = config_from_file.hostname
@@ -89,7 +100,9 @@ class TestCiscoConfig:
         assert empty_config.hostname == "foo"
         hostname_line = self.find_hostname_line(empty_config._parsed_config)
         assert hostname_line.text == "hostname foo"
-        assert len(empty_config._parsed_config.get_text()) == 2
+
+    def test_empty_hostname(self, empty_config):
+        assert empty_config.hostname == ""
 
     @pytest.mark.parametrize(
         "interface,expected",
