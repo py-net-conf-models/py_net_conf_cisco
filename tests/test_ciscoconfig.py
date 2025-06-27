@@ -14,7 +14,7 @@ class TestCiscoConfig:
     Test class for the CiscoConfig module
     """
 
-    def test_empty_creationi_fails(self):
+    def test_empty_creation_fails(self):
         with pytest.raises(ValueError):
             config = CiscoConfig()
             return config
@@ -104,6 +104,19 @@ class TestCiscoConfig:
     def test_empty_hostname(self, empty_config):
         assert empty_config.hostname == ""
 
+    def test_setting_hostname_with_empty_config(self):
+        config = CiscoConfig(config_text="")
+        config.hostname = "foo"
+        assert config.hostname == "foo"
+        hostname_line = self.find_hostname_line(config._parsed_config)
+        assert hostname_line.text == "hostname foo"
+
+    def test_setting_hostname_with_existing_config(self, config_from_file):
+        config_from_file.hostname = "foo"
+        assert config_from_file.hostname == "foo"
+        hostname_line = self.find_hostname_line(config_from_file._parsed_config)
+        assert hostname_line.text == "hostname foo"
+
     @pytest.mark.parametrize(
         "interface,expected",
         [
@@ -172,6 +185,13 @@ class TestCiscoConfig:
     )
     def test_getting_interface(self, config_from_file, interface, expected):
         assert config_from_file.get_interface(interface) == expected
+
+    def test_interface_that_does_not_exist(self, empty_config):
+        interface = InterfaceConfig(
+            interface_type=InterfaceType.LOOPBACK,
+            interface_number="1234",
+        )
+        assert empty_config.get_interface(interface) is None
 
     @pytest.mark.parametrize(
         "interface",
@@ -315,8 +335,97 @@ class TestCiscoConfig:
                     IPv4Interface("10.20.20.1/24"),
                 ],
             ),
+            # Test ip change from DHCP to static
+            InterfaceConfig(
+                interface_type=InterfaceType.GIGABITETHERNET,
+                interface_number="0/3",
+                ip_address=IPv4Interface("1.1.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=False,
+            ),
+            # Test enabling and interface
+            InterfaceConfig(
+                InterfaceType.VLAN,
+                interface_number="1",
+                ip_address=IPv4Interface("192.168.1.1/24"),
+                dhcp_assigned=False,
+                shutdown=False,
+            ),
         ],
     )
     def test_setting_interface(self, config_from_file, interface):
         assert config_from_file.set_interface(interface) is True
+        # interface_line = config_from_file._find_interface_lines(interface)[0]
+        # print(interface_line)
+        # print(interface_line.children)
+
         assert config_from_file.get_interface(interface) == interface
+
+    def test__unexpected_config_line(self, empty_config):
+        with pytest.raises(ValueError):
+            empty_config._unexpected_config_line(
+                empty_config._parsed_config.config_objs[0]
+            )
+            return empty_config
+
+    def test__unexpected_config_line_with_config_obj(self, empty_config):
+        with pytest.raises(ValueError):
+            empty_config._unexpected_config_line(
+                empty_config._parsed_config.config_objs[0]
+            )
+            return empty_config
+
+    def test_multiple_interface_lines(self, empty_config):
+        line = empty_config._parsed_config.config_objs[0]
+        line.insert_after("interface GigabitEthernet0/6")
+        line.insert_after("interface GigabitEthernet0/6")
+        interface = InterfaceConfig(
+            interface_type=InterfaceType.GIGABITETHERNET,
+            interface_number="0/6",
+        )
+        with pytest.raises(ValueError, match="Found multiple interfaces"):
+            empty_config._unexpected_config_line(
+                empty_config.get_interface(interface)
+            )
+            return empty_config
+
+    @pytest.mark.parametrize(
+        "interface,lines,match",
+        [
+            (  # Test for an unknown interface configuration line
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN, interface_number="1"
+                ),
+                [
+                    " bogus_line",
+                ],
+                "Unexpected config line:  bogus_line",
+            ),
+            (  # Test ip config with 5 words that are not a known option)
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN, interface_number="1"
+                ),
+                [
+                    " ip address 192.168.1.1 255.255.255.0 bogus",
+                ],
+                "Unexpected config line:  ip address 192.168.1.1 255.255.255.0 bogus",
+            ),
+            (  # Test ip config with known option)
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN, interface_number="1"
+                ),
+                [
+                    " ip address bogus",
+                ],
+                "Unexpected config line:  ip address bogus",
+            ),
+        ],
+    )
+    def test_interface_config_exceptions(
+        self, config_from_file, interface, lines, match
+    ):
+        interface_line = config_from_file._find_interface_lines(interface)[0]
+        for line in lines:
+            interface_line.insert_after(line)
+        with pytest.raises(ValueError, match=match):
+            config_from_file.get_interface(interface)

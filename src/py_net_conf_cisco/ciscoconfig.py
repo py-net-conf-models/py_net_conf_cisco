@@ -63,7 +63,9 @@ class CiscoConfig:
         interface_text = interface.interface_line()
         return self._parsed_config.find_objects(r"^" + interface_text + r"$")
 
-    def get_interface(self, interface: InterfaceConfig) -> InterfaceConfig:
+    def get_interface(
+        self, interface: InterfaceConfig
+    ) -> InterfaceConfig | None:
         """Return an InterfaceConfig object of the interface configuration"""
         found = InterfaceConfig(
             copy(interface.interface_type),
@@ -71,7 +73,9 @@ class CiscoConfig:
             interface.subinterface_number,
         )
         interface_lines = self._find_interface_lines(interface)
-        if len(interface_lines) == 1:
+        if len(interface_lines) == 0:
+            return None
+        elif len(interface_lines) == 1:
             for line in interface_lines[0].children:
                 line_split = line.text.split()
                 # Handle lines starting with " ip address"
@@ -103,7 +107,7 @@ class CiscoConfig:
                 elif line.re_search(r"^\s+vrf forwarding"):
                     found.vrf = line_split[2]
                 elif line.re_search(r"^\s+!.*"):
-                    # Ignore lines htat have been commented out
+                    # Ignore lines that have been commented out
                     continue
                 else:
                     self._unexpected_config_line(line)
@@ -169,7 +173,7 @@ class CiscoConfig:
                         ):
                             if interface.dhcp_assigned is False:
                                 line.re_sub(
-                                    r"dhcp.*",
+                                    r"\S.*",
                                     interface.ip_string(),
                                 )
                         elif len(line_split) == 4:
@@ -212,10 +216,16 @@ class CiscoConfig:
                                 secondary_lines_replaced += 1
 
                     elif line.re_search(r"description\s+(\S.+)"):
-                        line.re_sub(
-                            r"description.*",
-                            interface.description_string(),
-                        )
+                        if interface.description is None:
+                            line.re_sub(
+                                r"description.*",
+                                "!",
+                            )
+                        else:
+                            line.re_sub(
+                                r"description.*",
+                                interface.description_string(),
+                            )
                     elif line.re_search(r"^\s+shutdown"):
                         if interface.shutdown is False:
                             line.re_sub(r"\S.*", interface.shutdown_string())
