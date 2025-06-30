@@ -355,10 +355,6 @@ class TestCiscoConfig:
     )
     def test_setting_interface(self, config_from_file, interface):
         assert config_from_file.set_interface(interface) is True
-        # interface_line = config_from_file._find_interface_lines(interface)[0]
-        # print(interface_line)
-        # print(interface_line.children)
-
         assert config_from_file.get_interface(interface) == interface
 
     def test__unexpected_config_line(self, empty_config):
@@ -386,6 +382,11 @@ class TestCiscoConfig:
         with pytest.raises(ValueError, match="Found multiple interfaces"):
             empty_config._unexpected_config_line(
                 empty_config.get_interface(interface)
+            )
+            pass
+        with pytest.raises(ValueError, match="Found multiple interfaces"):
+            empty_config._unexpected_config_line(
+                empty_config.set_interface(interface)
             )
             return empty_config
 
@@ -421,7 +422,7 @@ class TestCiscoConfig:
             ),
         ],
     )
-    def test_interface_config_exceptions(
+    def test_get_interface_config_exceptions(
         self, config_from_file, interface, lines, match
     ):
         interface_line = config_from_file._find_interface_lines(interface)[0]
@@ -429,3 +430,61 @@ class TestCiscoConfig:
             interface_line.insert_after(line)
         with pytest.raises(ValueError, match=match):
             config_from_file.get_interface(interface)
+
+    @pytest.mark.parametrize(
+        "interface,lines,match",
+        [
+            (  # Test for an unknown interface configuration line
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN, interface_number="1"
+                ),
+                [
+                    " bogus_line",
+                ],
+                "Unexpected config line:  bogus_line",
+            ),
+            (  # Test ip config with 5 words that are not a known option
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN, interface_number="1"
+                ),
+                [
+                    " ip address 192.168.1.1 255.255.255.0 bogus",
+                ],
+                "Unexpected config line:  ip address 192.168.1.1 255.255.255.0 bogus",
+            ),
+            (  # Test ip config with known option
+                InterfaceConfig(
+                    interface_type=InterfaceType.VLAN, interface_number="1"
+                ),
+                [
+                    " ip address bogus",
+                ],
+                "Unexpected config line:  ip address bogus",
+            ),
+        ],
+    )
+    def test_set_interface_config_exceptions(
+        self, config_from_file, interface, lines, match
+    ):
+        interface_line = config_from_file._find_interface_lines(interface)[0]
+        for line in lines:
+            interface_line.insert_after(line)
+        with pytest.raises(ValueError, match=match):
+            config_from_file.set_interface(interface)
+
+    def test_add_secondary_with_no_primary(self, config_from_file: CiscoConfig):
+        interface = InterfaceConfig(
+            interface_type=InterfaceType.VLAN,
+            interface_number="1",
+            secondary_ip_addresses=[
+                IPv4Interface("1.1.1.1/24"),
+            ],
+        )
+
+        exception_string = "Trying to add secondary IP with no primary IP"
+        interface_line = config_from_file._find_interface_lines(interface)[0]
+        ip_line = interface_line.re_search_children(r"ip address.*")[0]
+        ip_line.re_sub(r"ip address.*", "!")
+        config_from_file._parsed_config.commit()
+        with pytest.raises(ValueError, match=exception_string):
+            config_from_file.set_interface(interface)

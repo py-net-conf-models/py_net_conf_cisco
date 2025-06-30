@@ -214,6 +214,10 @@ class CiscoConfig:
                                         ],
                                     )
                                 secondary_lines_replaced += 1
+                            else:
+                                self._unexpected_config_line(line)
+                        else:
+                            self._unexpected_config_line(line)
 
                     elif line.re_search(r"description\s+(\S.+)"):
                         if interface.description is None:
@@ -235,6 +239,9 @@ class CiscoConfig:
                     elif line.re_search(r"^\s+vrf forwarding"):
                         if interface.vrf != line_split[2]:
                             line.re_sub(r"vrf.*", interface.vrf_string())
+                    elif line.re_search(r"^\s+!.*"):
+                        # Ignore lines that have been commented out
+                        continue
                     else:
                         self._unexpected_config_line(line)
         else:
@@ -247,7 +254,9 @@ class CiscoConfig:
                 if primary_ip_line:
                     additional_secondary_lines = primary_ip_line
                 else:
-                    additional_secondary_lines = interface_line
+                    raise ValueError(
+                        "Trying to add secondary IP with no primary IP"
+                    )
             else:
                 additional_secondary_lines = last_found_secondary_line
 
